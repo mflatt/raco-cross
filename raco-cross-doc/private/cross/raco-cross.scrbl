@@ -181,10 +181,10 @@ The following @nonterm{options} are recognized:
         @itemlist[
 
           @item{The concatenation of the string form of the symbols
-                returned by @racket[(system-type 'arch)] and @racket[(system-type 'os)]
+                returned by @racket[(system-type 'arch)] and @racket[(system-type 'os*)]
                 on the target platform, with a @racket["-"] in between.
                 Some common alternative spellings of the @racket[(system-type 'arch)]
-                and @racket[(system-type 'os)] results are also recognized.
+                and @racket[(system-type 'os*)] results are also recognized.
 
                 Examples: @exec{i386-win32}, @exec{aarch64-macosx}, @exec{ppc-linux}}
 

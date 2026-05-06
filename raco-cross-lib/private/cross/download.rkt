@@ -30,6 +30,7 @@
 
 (define (download-distribution #:workspace workspace-dir
                                #:platform platform ; either arch+OS or "src" or "src-builtpkgs"
+                               #:identity [identity #f]
                                #:vm [vm (default-vm)] ; use #f for source
                                #:compile-any? [compile-any? #f]
                                #:version [vers (default-version)]
@@ -39,7 +40,8 @@
                                #:native? [native? #f]
                                #:host [host #f]
                                #:zo-dir [zo-dir #f])
-  (define platform+vm (platform+vm->path platform vm #:compile-any? compile-any?))
+  (define platform+vm (or identity
+                          (platform+vm->path platform vm #:compile-any? compile-any?)))
   (define dest-dir (build-path workspace-dir platform+vm))
   (unless (directory-exists? dest-dir)
     (define tmp-dir (build-path workspace-dir "tmp"))
