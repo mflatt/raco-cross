@@ -31,6 +31,7 @@
                     #:use-source? [use-source? #f]
                     #:configure-args [configure-args '()]
                     #:addon-dir [addon-dir #f]
+                    #:download-cache-dir [download-cache-dir #f]
                     #:quiet? [quiet? #f]
                     #:remove? [remove? #f]
                     #:browse? [browse? #f]
@@ -152,7 +153,8 @@
                            #:filename filename
                            #:native? native?
                            #:host host
-                           #:zo-dir zo-dir))
+                           #:zo-dir zo-dir
+                           #:download-cache-dir download-cache-dir))
   (define (run args
                #:platform platform
                #:identity identity

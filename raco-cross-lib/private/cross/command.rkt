@@ -14,6 +14,7 @@
 (define base-name "racket-minimal")
 (define host #f)
 (define target #f)
+(define ident #f)
 (define native? #f)
 (define skip-setup? #f)
 (define skip-pkgs? #f)
@@ -54,6 +55,9 @@
                              (string-append (short-program+command-name)
                                             ": unrecognized variant: "
                                             variant))]))]
+ [("--identity") identity
+                 "use <identity> for instance instead of normalized <target>"
+                 (set! ident identity)]
  [("--compile-any" "-M") "cross-build to machine-independent compilation"
                          (set! compile-any? #t)]
  [("--native") "install target platform as native to this host"
@@ -95,6 +99,7 @@
         #:installers-url installers-url
         #:archive download-filename
         #:vm vm
+        #:identity ident
         #:base-name base-name
         #:host host
         #:target target

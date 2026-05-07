@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/file
+         racket/port
          net/url-string
          file/untgz
          version/utils
@@ -39,7 +40,8 @@
                                #:filename [given-filename #f]
                                #:native? [native? #f]
                                #:host [host #f]
-                               #:zo-dir [zo-dir #f])
+                               #:zo-dir [zo-dir #f]
+                               #:download-cache-dir [download-cache-dir #f])
   (define platform+vm (or identity
                           (platform+vm->path platform vm #:compile-any? compile-any?)))
   (define dest-dir (build-path workspace-dir platform+vm))
@@ -58,16 +60,41 @@
                                         ".tgz")))
 
     (define url (combine-installers-url installers filename))
-    (printf ">> Downloading and unpacking\n ~a\n" (url->string url))
-    (define i (open-installer-url url
-                                  #:not-found-k
-                                  (lambda ()
-                                    (raise-user-error
-                                     (string-append "error: installer not found"
-                                                    (if (and native?
-                                                             (can-build-platform?))
-                                                        "\n consider using `--use-source` to build from source"
-                                                        ""))))))
+    (define (installer-not-found)
+      (raise-user-error
+       (string-append "error: installer not found"
+                      (if (and native?
+                               (can-build-platform?))
+                          "\n consider using `--use-source` to build from source"
+                          ""))))
+    (define (open-url)
+      (printf ">> Downloading and unpacking\n ~a\n" (url->string url))
+      (open-installer-url url #:not-found-k installer-not-found))
+
+    (define i
+      (cond
+        [(and download-cache-dir
+              (not (equal? (url-scheme url) "file")))
+         (printf ">> Checking cache\n ~a\n" (url->string url))
+         (define etag (open-installer-url url #:not-found-k installer-not-found #:etag? #t))
+         (cond
+           [(not etag) (open-url)]
+           [else
+            (define cache-file (build-path download-cache-dir etag))
+            (cond
+              [(file-exists? cache-file)
+               (printf ">> Using cached installer\n ~a\n ~a\n" (url->string url) cache-file)
+               (open-input-file cache-file)]
+              [else
+               (define i (open-url))
+               (make-directory* download-cache-dir)
+               (define tmp-file (build-path download-cache-dir (format "~a.download" etag)))
+               (define o (open-output-file tmp-file #:exists 'truncate))
+               (copy-port i o)
+               (close-input-port i)
+               (rename-file-or-directory tmp-file cache-file)
+               (open-input-file cache-file)])])]
+        [else (open-url)]))
 
     (untgz i #:dest tmp-dir)
     (close-input-port i)
@@ -95,11 +122,12 @@
 
     (when compile-any?
       (define system.rktd (build-path one-dir "lib" "system.rktd"))
-      (define sys (call-with-input-file* system.rktd read))
-      (call-with-output-file*
-       system.rktd
-       #:exists 'truncate
-       (lambda (o) (writeln (hash-set sys 'target-machine #f) o))))
+      (when (file-exists? system.rktd)
+        (define sys (call-with-input-file* system.rktd read))
+        (call-with-output-file*
+         system.rktd
+         #:exists 'truncate
+         (lambda (o) (writeln (hash-set sys 'target-machine #f) o)))))
 
     (define build-dir (build-path one-dir "build"))
     (make-directory* build-dir)
